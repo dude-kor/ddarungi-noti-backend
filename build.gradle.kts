@@ -35,7 +35,7 @@ dependencies {
     implementation("io.github.resilience4j:resilience4j-circuitbreaker:2.2.0")
 
     // FCM HTTP v1
-    implementation("com.google.firebase:firebase-admin:9.4.1")
+    implementation("com.google.firebase:firebase-admin:9.11.0")
 
     runtimeOnly("com.mysql:mysql-connector-j")
 
