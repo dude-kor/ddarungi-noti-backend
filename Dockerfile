@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # ---- build ----
-FROM eclipse-temurin:21-jdk AS build
+FROM eclipse-temurin:25-jdk AS build
 WORKDIR /workspace
 
 # Resolve dependencies first so this layer is cached until the build files change.
@@ -13,7 +13,7 @@ COPY src src
 RUN ./gradlew --no-daemon bootJar -x test
 
 # ---- run ----
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:25-jre
 WORKDIR /app
 
 RUN useradd --system --uid 10001 --no-create-home ddarungi
