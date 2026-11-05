@@ -1,0 +1,25 @@
+{
+  "mappings": [
+    {
+      "name": "tbCycleRentData - sample rent history",
+      "priority": 10,
+      "request": { "method": "GET", "urlPathPattern": "/[^/]+/json/tbCycleRentData/\\d+/\\d+/[^/]+/\\d{2}" },
+      "response": {
+        "status": 200,
+        "fixedDelayMilliseconds": 200,
+        "headers": { "Content-Type": "application/json;charset=UTF-8" },
+        "jsonBody": {
+          "tbCycleRentData": {
+            "list_total_count": 3,
+            "RESULT": { "CODE": "INFO-000", "MESSAGE": "정상 처리되었습니다" },
+            "row": [
+              { "BIKE_ID": "SPB-12345", "RENT_DT": "2026-11-02 08:05:11", "RENT_ID": "ST-4", "RENT_NM": "102. 망원역 1번출구 앞", "RENT_HOLD": "1", "RTN_DT": "2026-11-02 08:21:40", "RTN_ID": "ST-7", "RTN_NM": "105. 합정역 5번출구 앞", "USE_MIN": "16", "USE_DST": "2310.00", "BIKE_SE_CD": "일반따릉이" },
+              { "BIKE_ID": "SPB-54321", "RENT_DT": "2026-11-02 08:12:03", "RENT_ID": "ST-5", "RENT_NM": "103. 망원역 2번출구 앞", "RENT_HOLD": "2", "RTN_DT": "2026-11-02 08:30:55", "RTN_ID": "ST-8", "RTN_NM": "106. 홍대입구역 2번출구 앞", "USE_MIN": "18", "USE_DST": "3120.50", "BIKE_SE_CD": "QR형 따릉이" },
+              { "BIKE_ID": "SPB-99001", "RENT_DT": "2026-11-02 08:40:27", "RENT_ID": "ST-7", "RENT_NM": "105. 합정역 5번출구 앞", "RENT_HOLD": "1", "RTN_DT": "2026-11-02 08:52:09", "RTN_ID": "ST-6", "RTN_NM": "104. 합정역 1번출구 앞", "USE_MIN": "12", "USE_DST": "1480.00", "BIKE_SE_CD": "일반따릉이" }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

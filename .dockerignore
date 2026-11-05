@@ -1,0 +1,9 @@
+.git
+.github
+.gradle
+build
+*.iml
+.idea
+docs
+wiremock
+docker-compose.yml

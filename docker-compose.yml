@@ -1,0 +1,88 @@
+name: ddarungi-noti
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: ddarungi-mysql
+    restart: unless-stopped
+    ports: ["3306:3306"]
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: ddarungi_db
+      MYSQL_USER: ddarungi
+      MYSQL_PASSWORD: ddarungi
+      TZ: Asia/Seoul
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=+09:00
+    volumes: [mysql-data:/var/lib/mysql]
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: ddarungi-redis
+    restart: unless-stopped
+    ports: ["6379:6379"]
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes: [redis-data:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: ddarungi-rabbitmq
+    restart: unless-stopped
+    ports: ["5672:5672", "15672:15672"]
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes: [rabbitmq-data:/var/lib/rabbitmq]
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
+  # Mocks Seoul Open API (http://openapi.seoul.go.kr:8088/{KEY}/json/...)
+  #   KEY=ERROR_KEY -> HTTP 500, KEY=SLOW_KEY -> 5s delay (trips read timeout / circuit breaker)
+  wiremock:
+    image: wiremock/wiremock:3.9.1
+    container_name: ddarungi-wiremock
+    restart: unless-stopped
+    ports: ["8089:8080"]
+    command: ["--global-response-templating", "--verbose"]
+    volumes:
+      - ./wiremock/mappings:/home/wiremock/mappings
+
+  # The backend itself, built from ./Dockerfile. Optional: start it with `docker compose --profile app up --build`.
+  # (Day-to-day development runs `./gradlew bootRun` against the services above instead.)
+  app:
+    profiles: ["app"]
+    build: .
+    container_name: ddarungi-app
+    ports: ["8080:8080"]
+    environment:
+      MYSQL_HOST: mysql
+      REDIS_HOST: redis
+      RABBIT_HOST: rabbitmq
+      SEOUL_API_BASE_URL: http://wiremock:8080
+      SEOUL_API_KEY: LOCAL_KEY
+      FCM_ENABLED: "false"
+    depends_on:
+      mysql: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+      wiremock: { condition: service_started }
+
+volumes:
+  mysql-data:
+  redis-data:
+  rabbitmq-data:

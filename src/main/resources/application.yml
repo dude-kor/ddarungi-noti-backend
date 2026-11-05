@@ -1,0 +1,72 @@
+spring:
+  application:
+    name: ddarungi-noti
+  threads:
+    virtual:
+      enabled: true            # Java 21 virtual threads for Tomcat + @Async/@Scheduled executors
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:3306/ddarungi_db?useUnicode=true&characterEncoding=utf8mb4&serverTimezone=Asia/Seoul&rewriteBatchedStatements=true
+    username: ${MYSQL_USER:ddarungi}
+    password: ${MYSQL_PASSWORD:ddarungi}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: update          # local dev only; switch to Flyway + validate before production
+    properties:
+      hibernate:
+        jdbc.time_zone: Asia/Seoul
+        jdbc.batch_size: 500
+        order_inserts: true
+        order_updates: true
+  rabbitmq:
+    host: ${RABBIT_HOST:localhost}
+    port: 5672
+    username: guest
+    password: guest
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: 6379
+
+server:
+  port: 8080
+  shutdown: graceful
+
+# Redisson reads this via spring.data.redis.* automatically (redisson-spring-boot-starter)
+
+seoul-api:
+  base-url: ${SEOUL_API_BASE_URL:http://localhost:8089}   # real: http://openapi.seoul.go.kr:8088
+  key: ${SEOUL_API_KEY:LOCAL_KEY}                          # WireMock: ERROR_KEY / SLOW_KEY simulate failures
+  chunk-size: 1000
+  max-stations: 3000
+  connect-timeout: 2s
+  read-timeout: 3s
+
+cache:
+  station-realtime-ttl: 60s
+
+fcm:
+  enabled: ${FCM_ENABLED:false}
+  credentials-path: ${FCM_CREDENTIALS_PATH:}
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      seoulApi:
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,circuitbreakers
+
+logging:
+  level:
+    kr.ddarungi: DEBUG

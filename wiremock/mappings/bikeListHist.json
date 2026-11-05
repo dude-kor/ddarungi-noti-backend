@@ -1,0 +1,59 @@
+{
+  "mappings": [
+    {
+      "name": "bikeListHist - error simulation",
+      "priority": 1,
+      "request": { "method": "GET", "urlPathPattern": "/ERROR_KEY/json/bikeListHist/.*" },
+      "response": {
+        "status": 500,
+        "headers": { "Content-Type": "application/json;charset=UTF-8" },
+        "jsonBody": { "RESULT": { "CODE": "ERROR-500", "MESSAGE": "서버 오류입니다." } }
+      }
+    },
+    {
+      "name": "bikeListHist - latency simulation",
+      "priority": 2,
+      "request": { "method": "GET", "urlPathPattern": "/SLOW_KEY/json/bikeListHist/.*" },
+      "response": {
+        "status": 200,
+        "fixedDelayMilliseconds": 5000,
+        "headers": { "Content-Type": "application/json;charset=UTF-8" },
+        "jsonBody": { "RESULT": { "CODE": "INFO-200", "MESSAGE": "해당하는 데이터가 없습니다." } }
+      }
+    },
+    {
+      "name": "bikeListHist - chunks beyond the first (no data)",
+      "priority": 5,
+      "request": { "method": "GET", "urlPathPattern": "/[^/]+/json/bikeListHist/(?!1/)\\d+/\\d+/\\d{10}" },
+      "response": {
+        "status": 200,
+        "headers": { "Content-Type": "application/json;charset=UTF-8" },
+        "jsonBody": { "RESULT": { "CODE": "INFO-200", "MESSAGE": "해당하는 데이터가 없습니다." } }
+      }
+    },
+    {
+      "name": "bikeListHist - first chunk (1..N)",
+      "priority": 10,
+      "request": { "method": "GET", "urlPathPattern": "/[^/]+/json/bikeListHist/1/\\d+/\\d{10}" },
+      "response": {
+        "status": 200,
+        "fixedDelayMilliseconds": 150,
+        "headers": { "Content-Type": "application/json;charset=UTF-8" },
+        "jsonBody": {
+          "bikeListHist": {
+            "list_total_count": 6,
+            "RESULT": { "CODE": "INFO-000", "MESSAGE": "정상 처리되었습니다" },
+            "row": [
+              { "stationId": "ST-4",   "stationName": "102. 망원역 1번출구 앞",   "parkingBikeTotCnt": 7,  "rackTotCnt": 15, "shared": 47,  "stationLatitude": 37.5558578, "stationLongitude": 126.9104630, "stationDt": "{{now format='yyyyMMddHH'}}" },
+              { "stationId": "ST-5",   "stationName": "103. 망원역 2번출구 앞",   "parkingBikeTotCnt": 2,  "rackTotCnt": 14, "shared": 14,  "stationLatitude": 37.5549660, "stationLongitude": 126.9100980, "stationDt": "{{now format='yyyyMMddHH'}}" },
+              { "stationId": "ST-6",   "stationName": "104. 합정역 1번출구 앞",   "parkingBikeTotCnt": 0,  "rackTotCnt": 10, "shared": 0,   "stationLatitude": 37.5500770, "stationLongitude": 126.9140230, "stationDt": "{{now format='yyyyMMddHH'}}" },
+              { "stationId": "ST-7",   "stationName": "105. 합정역 5번출구 앞",   "parkingBikeTotCnt": 12, "rackTotCnt": 20, "shared": 60,  "stationLatitude": 37.5502420, "stationLongitude": 126.9149570, "stationDt": "{{now format='yyyyMMddHH'}}" },
+              { "stationId": "ST-8",   "stationName": "106. 홍대입구역 2번출구 앞", "parkingBikeTotCnt": 3,  "rackTotCnt": 25, "shared": 12,  "stationLatitude": 37.5573410, "stationLongitude": 126.9246600, "stationDt": "{{now format='yyyyMMddHH'}}" },
+              { "stationId": "ST-9",   "stationName": "107. 서울숲역 4번출구 앞",  "parkingBikeTotCnt": 18, "rackTotCnt": 18, "shared": 100, "stationLatitude": 37.5436930, "stationLongitude": 127.0446530, "stationDt": "{{now format='yyyyMMddHH'}}" }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+build/
+.gradle/
+*.iml
+.idea/
+out/
+.env
+# Firebase service account – never commit
+firebase-service-account*.json
