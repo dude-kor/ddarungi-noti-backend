@@ -1,7 +1,7 @@
 package kr.ddarungi.noti.cache;
 
 import kr.ddarungi.noti.config.CacheProperties;
-import kr.ddarungi.noti.seoul.BikeListHistResponse.Row;
+import kr.ddarungi.noti.seoul.SeoulBikeApiResponse.Row;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.SessionCallback;
@@ -70,6 +70,9 @@ public class StationRealtimeCache {
                 @Override
                 public Object execute(RedisOperations ops) {
                     for (Row row : part) {
+                        // FIX: a blank/garbage bike count is "unknown", not 0. Caching it as 0 would fire a false
+                        //      "0 bikes" push; without a key the dispatcher skips the station (av == null).
+                        if (!row.hasBikeCount()) continue;
                         Map<String, String> hash = Map.of(
                                 "bike_cnt", String.valueOf(row.bikeCnt()),
                                 "rack_tot_cnt", String.valueOf(row.rackCnt()),
@@ -102,10 +105,25 @@ public class StationRealtimeCache {
         return new StationAvailability(
                 toInt(m.get("bike_cnt")), toInt(m.get("rack_tot_cnt")), toInt(m.get("shared")),
                 String.valueOf(m.getOrDefault("status", "NORMAL")),
-                Long.parseLong(String.valueOf(m.getOrDefault("updated_at", "0"))), stale);
+                toLong(m.get("updated_at")), stale);
     }
 
+    // FIX: a corrupted Redis value used to throw NumberFormatException and was reported as "Redis unavailable".
     private static int toInt(Object o) {
-        return o == null ? 0 : Integer.parseInt(String.valueOf(o));
+        if (o == null) return 0;
+        try {
+            return Integer.parseInt(String.valueOf(o).trim());
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    private static long toLong(Object o) {
+        if (o == null) return 0L;
+        try {
+            return Long.parseLong(String.valueOf(o).trim());
+        } catch (NumberFormatException e) {
+            return 0L;
+        }
     }
 }

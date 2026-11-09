@@ -16,8 +16,14 @@ import java.time.LocalTime;
 @Entity
 @Table(name = "user_alert_schedule",
         uniqueConstraints = @UniqueConstraint(name = "uk_device_slot", columnNames = {"device_id", "slot_type"}),
-        indexes = @Index(name = "idx_scheduler_lookup",
-                columnList = "is_active, notify_time, station_id, device_id"))
+        indexes = {
+                // FIX: notify_days joins the index so the weekday bit test is answered from the index entry;
+                //      must stay identical to V1__init.sql (the schema is owned by Flyway, not by Hibernate).
+                @Index(name = "idx_scheduler_lookup",
+                        columnList = "is_active, notify_time, notify_days, station_id, device_id"),
+                // FIX: explicit FK index with station_id as the LEADING column (the lookup index has it third).
+                @Index(name = "idx_schedule_station", columnList = "station_id")
+        })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class UserAlertSchedule {

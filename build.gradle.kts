@@ -8,10 +8,14 @@ group = "kr.ddarungi"
 version = "0.0.1-SNAPSHOT"
 
 java {
-    toolchain { languageVersion.set(JavaLanguageVersion.of(21)) }
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(21))
+        vendor.set(JvmVendorSpec.AMAZON)
+    }
 }
 
 configurations {
+
     compileOnly { extendsFrom(configurations.annotationProcessor.get()) }
 }
 
@@ -39,11 +43,19 @@ dependencies {
 
     runtimeOnly("com.mysql:mysql-connector-j")
 
+    // FIX: schema migrations (versions managed by the Spring Boot BOM). Flyway 10+ needs the MySQL module.
+    implementation("org.flywaydb:flyway-core")
+    runtimeOnly("org.flywaydb:flyway-mysql")
+
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.amqp:spring-rabbit-test")
+    // ScheduleBitmaskQueryTest runs the real V1 migration and queries against MySQL (skipped when Docker is absent).
+    testImplementation("org.springframework.boot:spring-boot-testcontainers")
+    testImplementation("org.testcontainers:junit-jupiter")
+    testImplementation("org.testcontainers:mysql")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

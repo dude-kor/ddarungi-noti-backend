@@ -12,7 +12,10 @@ import org.hibernate.annotations.OnDeleteAction;
 
 @Entity
 @Table(name = "user_favorite_station",
-        uniqueConstraints = @UniqueConstraint(name = "uk_device_station", columnNames = {"device_id", "station_id"}))
+        uniqueConstraints = @UniqueConstraint(name = "uk_device_station", columnNames = {"device_id", "station_id"}),
+        // FIX: FK column station_id needs its own leading-column index (uk_device_station only covers device_id);
+        //      otherwise InnoDB scans/locks wide ranges when station_master rows are touched. Mirrors V1__init.sql.
+        indexes = @Index(name = "idx_fav_station", columnList = "station_id"))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class UserFavoriteStation {

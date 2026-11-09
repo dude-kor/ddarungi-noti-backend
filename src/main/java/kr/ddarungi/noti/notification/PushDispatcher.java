@@ -55,8 +55,16 @@ public class PushDispatcher {
 
         LocalTime time = target.toLocalTime();
         DayOfWeek day = target.getDayOfWeek();
-        List<UserAlertSchedule> due = scheduleRepository.findDue(time).stream()
-                .filter(s -> s.firesOn(day)).toList();
+        List<UserAlertSchedule> due;
+        try {
+            // FIX: weekday bitmask is evaluated in MySQL; device + station arrive fetch-joined (no N+1).
+            due = scheduleRepository.findDue(time, day);
+        } catch (RuntimeException e) {
+            // FIX: the minute lock was already taken; if the scan fails, release it so a retry (or another
+            //      instance) can still serve this minute instead of silently dropping every alert.
+            redis.delete("dispatch:" + target.format(MINUTE_KEY));
+            throw e;
+        }
         if (due.isEmpty()) return 0;
 
         Set<String> stationIds = due.stream().map(s -> s.getStation().getStationId()).collect(Collectors.toSet());

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import kr.ddarungi.noti.config.SeoulApiProperties;
-import kr.ddarungi.noti.seoul.BikeListHistResponse.Row;
+import kr.ddarungi.noti.seoul.SeoulBikeApiResponse.Row;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -69,55 +69,59 @@ public class SeoulApiClient {
         List<Row> all = new ArrayList<>();
         for (int start = 1; start <= props.maxStations(); start += props.chunkSize()) {
             int end = start + props.chunkSize() - 1;
-            List<Row> chunk = fetchChunk(start, end, stationDt);
-            all.addAll(chunk);
-            if (chunk.size() < props.chunkSize()) {
-                break;      // short or empty page = last page
+            SeoulBikeApiResponse page = fetchChunk(start, end, stationDt);
+            all.addAll(page.rows());
+            // FIX: "short page = last page" broke when invalid rows were dropped from a full page and ended the
+            //      paging early. list_total_count is authoritative; the row count is only the fallback.
+            boolean last = page.totalCount() != null
+                    ? end >= page.totalCount()
+                    : page.rows().size() < props.chunkSize();
+            if (last || page.rows().isEmpty()) {
+                break;
             }
         }
         log.debug("bikeListHist {} -> {} stations", stationDt, all.size());
         return all;
     }
 
-    private List<Row> fetchChunk(int start, int end, String stationDt) {
+    private SeoulBikeApiResponse fetchChunk(int start, int end, String stationDt) {
         String body = restClient.get()
                 .uri("/{key}/json/bikeListHist/{start}/{end}/{dt}", props.key(), start, end, stationDt)
                 .retrieve()
                 .body(String.class);     // 4xx/5xx and timeouts throw -> counted by the circuit breaker
-        return parse(body);
+        return parseResponse(body);
+    }
+
+    /** Rows of one response; see {@link #parseResponse(String)}. */
+    List<Row> parse(String json) {
+        return parseResponse(json).rows();
     }
 
     /**
-     * Normal:   {"bikeListHist":{"list_total_count":N,"RESULT":{"CODE":"INFO-000",..},"row":[..]}}
-     * No data / error: {"RESULT":{"CODE":"INFO-200","MESSAGE":".."}}
+     * FIX: the DTO no longer assumes a wrapper name or field types (see {@link SeoulBikeApiResponse}).
+     * Normal:          {"<wrapper>":{"list_total_count":N,"RESULT":{"CODE":"INFO-000",..},"row":[..]}}
+     * No data / error: {"RESULT":{"CODE":"INFO-200","MESSAGE":".."}}  or flat {"CODE":..,"MESSAGE":..}
+     * INFO-200 yields an empty response; any other non-INFO-000 code throws (counted by the circuit breaker).
      */
-    List<Row> parse(String json) {
+    SeoulBikeApiResponse parseResponse(String json) {
         if (json == null || json.isBlank()) {
             throw new SeoulApiException("Empty response body from bikeListHist");
         }
-        BikeListHistResponse response;
+        SeoulBikeApiResponse response;
         try {
-            response = mapper.readValue(json, BikeListHistResponse.class);
+            response = SeoulBikeApiResponse.parse(mapper, json);
         } catch (JsonProcessingException e) {
             throw new SeoulApiException("Unparseable bikeListHist response", e);
         }
 
-        BikeListHistResponse.Body body = response.body();
-        BikeListHistResponse.Result result = body != null && body.result() != null ? body.result() : response.result();
-        String code = result != null && result.code() != null ? result.code() : (body != null ? CODE_OK : "UNKNOWN");
-
+        String code = response.effectiveCode();
         if (CODE_NO_DATA.equals(code)) {
-            return List.of();
+            return response;
         }
         if (!CODE_OK.equals(code)) {
             throw new SeoulApiException("bikeListHist error " + code
-                    + (result != null ? ": " + result.message() : ""));
+                    + (response.result() != null ? ": " + response.result().message() : ""));
         }
-        if (body == null || body.row() == null) {
-            return List.of();
-        }
-        return body.row().stream()
-                .filter(r -> r.stationId() != null && !r.stationId().isBlank())
-                .toList();
+        return response;
     }
 }

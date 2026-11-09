@@ -25,7 +25,9 @@ docker compose up -d          # MySQL, Redis, RabbitMQ, WireMock (Seoul API mock
 Run the app itself in Docker too: `docker compose --profile app up --build`.
 
 WireMock simulates the Seoul API. The key selects the behaviour: `LOCAL_KEY` (default) returns sample stations,
-`ERROR_KEY` → HTTP 500, `SLOW_KEY` → 5 s delay (trips the 3 s read timeout and the circuit breaker):
+`ERROR_KEY` → HTTP 500, `SLOW_KEY` → 5 s delay (trips the 3 s read timeout and the circuit breaker),
+`BAD_KEY` → HTTP 200 with `INFO-100` (invalid key), `EDGE_KEY` → malformed cells (blank/`N/A` counts, `null` and
+id-less rows, `[점검중]` / temporary stations, `0.0` coordinates) to exercise the defensive parser:
 
 ```bash
 SEOUL_API_KEY=SLOW_KEY ./gradlew bootRun
@@ -41,8 +43,17 @@ SEOUL_API_KEY=SLOW_KEY ./gradlew bootRun
 | `SEOUL_API_KEY` | `LOCAL_KEY` | Seoul Open Data Plaza key |
 | `FCM_ENABLED`, `FCM_CREDENTIALS_PATH` | `false`, – | Firebase service-account JSON for real pushes |
 
-`spring.jpa.hibernate.ddl-auto=update` is for local development. Introduce Flyway and switch to `validate` before
-production.
+## Database migrations
+
+The schema is owned by Flyway: `src/main/resources/db/migration/V1__init.sql` (MySQL 8.0.16+, CHECK constraints are
+enforced). Hibernate runs with `ddl-auto: none`. Change the schema only by adding `V2__...sql`, never by editing an
+applied migration, and mirror index changes in the entities' `@Index` annotations (documentation only).
+
+A local database created by the earlier `ddl-auto=update` setup has no Flyway history and a different index layout:
+recreate it with `docker compose down -v && docker compose up -d`.
+
+`./gradlew test` includes `ScheduleBitmaskQueryTest`, which runs the migration and the weekday-bitmask query against a
+real MySQL via Testcontainers; it is skipped when no Docker daemon is available.
 
 ## CI/CD (GitHub Actions)
 

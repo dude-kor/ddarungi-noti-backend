@@ -11,13 +11,22 @@ spring:
   jpa:
     open-in-view: false
     hibernate:
-      ddl-auto: update          # local dev only; switch to Flyway + validate before production
+      # FIX: schema is owned by Flyway (db/migration/V1__init.sql). `update` could never alter indexes or add CHECKs
+      #      and drifted per environment. `none` rather than `validate`: several columns use columnDefinition
+      #      (TINYINT) that Hibernate's validator reports as a type mismatch.
+      ddl-auto: none
     properties:
       hibernate:
         jdbc.time_zone: Asia/Seoul
         jdbc.batch_size: 500
         order_inserts: true
         order_updates: true
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    # An existing dev database created by the old ddl-auto=update has no history table: recreate it
+    # (`docker compose down -v`) instead of baselining, otherwise it keeps the old unique/index layout.
+    baseline-on-migrate: false
   rabbitmq:
     host: ${RABBIT_HOST:localhost}
     port: 5672

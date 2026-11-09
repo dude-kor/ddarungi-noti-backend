@@ -2,7 +2,7 @@ package kr.ddarungi.noti.seoul;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import kr.ddarungi.noti.config.SeoulApiProperties;
-import kr.ddarungi.noti.seoul.BikeListHistResponse.Row;
+import kr.ddarungi.noti.seoul.SeoulBikeApiResponse.Row;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -38,6 +38,45 @@ class SeoulApiClientParseTest {
         assertThat(rows.get(0).bikeCnt()).isEqualTo(7);
         assertThat(rows.get(0).rackCnt()).isEqualTo(15);
         assertThat(rows.get(1).bikeCnt()).isZero();
+    }
+
+    @Test
+    void stringNumbersUnderAnyWrapperKeyAreAccepted() {
+        String json = """
+                {"rentBikeStatus":{"list_total_count":1,"RESULT":{"CODE":"INFO-000","MESSAGE":"ok"},
+                  "row":[{"stationId":"ST-4","stationName":"102. 망원역 1번출구 앞","parkingBikeTotCnt":"7",
+                          "rackTotCnt":"15","shared":"47","stationLatitude":"37.55","stationLongitude":"126.91"}]}}
+                """;
+
+        List<Row> rows = client.parse(json);
+
+        assertThat(rows).hasSize(1);
+        assertThat(rows.get(0).bikeCnt()).isEqualTo(7);
+    }
+
+    @Test
+    void invalidKeyAnsweredWithHttp200IsAFailure() {
+        assertThatThrownBy(() -> client.parse("{\"RESULT\":{\"CODE\":\"INFO-100\",\"MESSAGE\":\"인증키가 유효하지 않습니다.\"}}"))
+                .isInstanceOf(SeoulApiException.class)
+                .hasMessageContaining("INFO-100");
+        assertThatThrownBy(() -> client.parse("{\"CODE\":\"INFO-100\",\"MESSAGE\":\"x\"}"))
+                .isInstanceOf(SeoulApiException.class)
+                .hasMessageContaining("INFO-100");
+    }
+
+    @Test
+    void aGarbageCellDoesNotFailTheWholeResponse() {
+        String json = """
+                {"bikeListHist":{"RESULT":{"CODE":"INFO-000"},"row":[
+                  {"stationId":"ST-4","parkingBikeTotCnt":"N/A","rackTotCnt":"","shared":null},
+                  {"stationId":"ST-5","parkingBikeTotCnt":"3","rackTotCnt":"14"}]}}
+                """;
+
+        List<Row> rows = client.parse(json);
+
+        assertThat(rows).hasSize(2);
+        assertThat(rows.get(0).hasBikeCount()).isFalse();
+        assertThat(rows.get(1).bikeCnt()).isEqualTo(3);
     }
 
     @Test

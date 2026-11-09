@@ -1,6 +1,6 @@
 package kr.ddarungi.noti.cache;
 
-import kr.ddarungi.noti.seoul.BikeListHistResponse.Row;
+import kr.ddarungi.noti.seoul.SeoulBikeApiResponse.Row;
 import kr.ddarungi.noti.seoul.SeoulApiClient;
 import kr.ddarungi.noti.seoul.SeoulApiException;
 import lombok.RequiredArgsConstructor;

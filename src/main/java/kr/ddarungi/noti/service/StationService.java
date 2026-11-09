@@ -4,7 +4,7 @@ import kr.ddarungi.noti.cache.StationAvailability;
 import kr.ddarungi.noti.cache.StationRealtimeService;
 import kr.ddarungi.noti.domain.station.StationMaster;
 import kr.ddarungi.noti.domain.station.StationMasterRepository;
-import kr.ddarungi.noti.seoul.BikeListHistResponse.Row;
+import kr.ddarungi.noti.seoul.SeoulBikeApiResponse.Row;
 import kr.ddarungi.noti.seoul.SeoulApiClient;
 import kr.ddarungi.noti.web.dto.ApiDtos.StationDto;
 import lombok.RequiredArgsConstructor;
@@ -51,16 +51,26 @@ public class StationService {
 
         List<StationMaster> toSave = new ArrayList<>(rows.size());
         for (Row r : rows) {
-            StationMaster fresh = StationMaster.fromOpenApi(r.stationId(), r.stationName(), r.rackCnt(),
-                    r.stationLatitude(), r.stationLongitude());
-            StationMaster old = existing.get(r.stationId());
+            // FIX: one malformed row (e.g. an over-long stationId) used to abort the entire sync. Skip and log it.
+            StationMaster fresh;
+            try {
+                fresh = StationMaster.fromOpenApi(r.stationId(), r.stationName(), r.rackCnt(),
+                        r.stationLatitude(), r.stationLongitude());
+            } catch (IllegalArgumentException e) {
+                log.warn("Skipping station row: {}", e.getMessage());
+                continue;
+            }
+            StationMaster old = existing.get(fresh.getStationId());
             if (old == null) {
                 toSave.add(fresh);
             } else {
-                old.updateFromOpenApi(fresh.getStationName(), r.rackCnt(), r.stationLatitude(), r.stationLongitude());
+                old.syncFrom(fresh);          // FIX: also refreshes number and status ([점검중] -> CLOSED), keeps good coordinates
                 toSave.add(old);
             }
         }
+        // FIX: a stable ascending-id order makes every sync lock station_master rows in the same order as any other
+        //      writer, so two overlapping batches cannot deadlock each other.
+        toSave.sort(Comparator.comparing(StationMaster::getStationId));
         repository.saveAll(toSave);
         index = null;                                                    // rebuild lazily
         log.info("Station master synced: {} stations", toSave.size());

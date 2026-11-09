@@ -22,6 +22,24 @@ public class DeviceService {
                         .platform(r.platform()).appVersion(r.appVersion()).build()));
     }
 
+    /**
+     * Deactivates many devices after a mass send.
+     * FIX: ids are de-duplicated, sorted ascending and updated in chunks of 500, each chunk in its own short
+     * transaction. Every writer therefore takes the same record locks in the same order (no lock cycle), and no
+     * transaction holds hundreds of row locks while FCM is being called.
+     */
+    public int deactivateAll(java.util.Collection<Long> deviceIds) {
+        if (deviceIds == null || deviceIds.isEmpty()) return 0;
+        java.util.List<Long> sorted = deviceIds.stream().filter(java.util.Objects::nonNull)
+                .distinct().sorted().toList();
+        int changed = 0;
+        for (int from = 0; from < sorted.size(); from += 500) {
+            // each call is its own transaction: deactivateByIds is @Transactional on the repository interface
+            changed += repository.deactivateByIds(sorted.subList(from, Math.min(from + 500, sorted.size())));
+        }
+        return changed;
+    }
+
     /** FCM said the token is dead (UNREGISTERED / 410). */
     @Transactional
     public void deactivate(Long deviceId) {
