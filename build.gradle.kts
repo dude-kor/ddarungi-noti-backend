@@ -32,7 +32,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
 
     // Redis + distributed lock (Redisson manages its own connection)
-    implementation("org.redisson:redisson-spring-boot-starter:3.37.0")
+    implementation("org.redisson:redisson-spring-boot-starter:4.8.0")
 
     // Resilience4j
     implementation("io.github.resilience4j:resilience4j-spring-boot3:2.2.0")
