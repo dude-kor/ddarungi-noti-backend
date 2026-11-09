@@ -35,8 +35,8 @@ dependencies {
     implementation("org.redisson:redisson-spring-boot-starter:3.37.0")
 
     // Resilience4j
-    implementation("io.github.resilience4j:resilience4j-spring-boot3:2.2.0")
-    implementation("io.github.resilience4j:resilience4j-circuitbreaker:2.2.0")
+    implementation("io.github.resilience4j:resilience4j-spring-boot3:2.4.0")
+    implementation("io.github.resilience4j:resilience4j-circuitbreaker:2.4.0")
 
     // FCM HTTP v1
     implementation("com.google.firebase:firebase-admin:9.4.1")
