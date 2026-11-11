@@ -19,6 +19,15 @@
 --    through uk_device_slot / uk_device_station - both lead with device_id, so it is a narrow index-range lock.
 -- =====================================================================================================================
 
+-- Schema (MySQL: SCHEMA == DATABASE). Name must match the JDBC URL in application.yml (/ddarungi_db).
+-- NOTE: Flyway runs this over a connection that already targets ddarungi_db, so this statement is a no-op there; it
+--       exists so the script can also bootstrap an empty server when run by hand (mysql < V1__init.sql).
+CREATE SCHEMA IF NOT EXISTS ddarungi_db
+    DEFAULT CHARACTER SET utf8mb4
+    DEFAULT COLLATE utf8mb4_unicode_ci;
+
+USE ddarungi_db;
+
 CREATE TABLE station_master (
     station_id      VARCHAR(16)   NOT NULL,
     station_no      VARCHAR(16)   NOT NULL,
