@@ -10,9 +10,9 @@ spring:
       enabled: true            # Java 21 virtual threads for Tomcat + @Async/@Scheduled executors
   datasource:
     url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:ddarungi_db}?useUnicode=true&characterEncoding=utf8mb4&serverTimezone=Asia/Seoul&rewriteBatchedStatements=true
-    # No defaults: startup fails fast ("Could not resolve placeholder") instead of running with known credentials.
-    username: ${MYSQL_USER}
-    password: ${MYSQL_PASSWORD}
+    # Defaults are the local docker-compose values only; override them via .env / environment in any real deployment.
+    username: ${MYSQL_USER:ddarungi}
+    password: ${MYSQL_PASSWORD:ddarungi}
   jpa:
     open-in-view: false
     hibernate:
@@ -35,8 +35,8 @@ spring:
   rabbitmq:
     host: ${RABBIT_HOST:localhost}
     port: ${RABBIT_PORT:5672}
-    username: ${RABBIT_USER}
-    password: ${RABBIT_PASSWORD}
+    username: ${RABBIT_USER:guest}
+    password: ${RABBIT_PASSWORD:guest}
   data:
     redis:
       host: ${REDIS_HOST:localhost}
@@ -51,7 +51,7 @@ server:
 
 seoul-api:
   base-url: ${SEOUL_API_BASE_URL:http://localhost:8089}   # real: http://openapi.seoul.go.kr:8088
-  key: ${SEOUL_API_KEY}                                    # WireMock: LOCAL_KEY / ERROR_KEY / SLOW_KEY ...
+  key: ${SEOUL_API_KEY:LOCAL_KEY}                          # WireMock: ERROR_KEY / SLOW_KEY simulate failures
   chunk-size: 1000
   max-stations: 3000
   connect-timeout: 2s

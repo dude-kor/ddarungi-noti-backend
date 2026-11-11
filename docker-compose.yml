@@ -1,6 +1,6 @@
 name: ddarungi-noti
 
-# Credentials come from ./.env (copy .env.example). `:?` makes compose refuse to start when one is missing.
+# Credentials come from ./.env (copy .env.example); without it the local-only defaults below are used.
 
 services:
   mysql:
@@ -9,10 +9,10 @@ services:
     restart: unless-stopped
     ports: ["3306:3306"]
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in .env}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-ddarungi_db}
-      MYSQL_USER: ${MYSQL_USER:?set MYSQL_USER in .env}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?set MYSQL_PASSWORD in .env}
+      MYSQL_USER: ${MYSQL_USER:-ddarungi}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-ddarungi}
       TZ: Asia/Seoul
     command:
       - --character-set-server=utf8mb4
@@ -45,8 +45,8 @@ services:
     restart: unless-stopped
     ports: ["5672:5672", "15672:15672"]
     environment:
-      RABBITMQ_DEFAULT_USER: ${RABBIT_USER:?set RABBIT_USER in .env}
-      RABBITMQ_DEFAULT_PASS: ${RABBIT_PASSWORD:?set RABBIT_PASSWORD in .env}
+      RABBITMQ_DEFAULT_USER: ${RABBIT_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBIT_PASSWORD:-guest}
     volumes: [rabbitmq-data:/var/lib/rabbitmq]
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
@@ -72,7 +72,9 @@ services:
     build: .
     container_name: ddarungi-app
     ports: ["8080:8080"]
-    env_file: [.env]           # credentials, SEOUL_API_KEY, FCM_* ; the entries below override the hosts
+    env_file:                  # credentials, SEOUL_API_KEY, FCM_* ; the entries below override the hosts
+      - path: .env
+        required: false
     environment:
       MYSQL_HOST: mysql
       REDIS_HOST: redis

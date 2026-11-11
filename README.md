@@ -17,7 +17,7 @@ API contract: [`docs/API.md`](docs/API.md).
 ## Run locally
 
 ```bash
-cp .env.example .env          # once: credentials / API keys (gitignored), read by compose AND bootRun
+cp .env.example .env          # optional: override credentials / API keys (gitignored), read by compose AND bootRun
 docker compose up -d          # MySQL, Redis, RabbitMQ, WireMock (Seoul API mock on :8089)
 ./gradlew bootRun             # http://localhost:8080
 ./gradlew test
@@ -36,19 +36,19 @@ SEOUL_API_KEY=SLOW_KEY ./gradlew bootRun
 
 ## Configuration
 
-Secrets have **no defaults**: the app refuses to start (`Could not resolve placeholder`) and compose refuses to
-run until they are set. Locally put them in `.env` (see [`.env.example`](.env.example)); in deployment pass them
-as environment variables / your platform's secret store.
+Credentials default to the local docker-compose values (`ddarungi`/`ddarungi`, `guest`/`guest`, `LOCAL_KEY`), so
+`.env` is optional for local work. Override them in `.env` (see [`.env.example`](.env.example)) or, in deployment,
+as environment variables / your platform's secret store — never rely on the defaults outside your machine.
 
 | Variable | Default | |
 |---|---|---|
 | `MYSQL_HOST` / `MYSQL_PORT` / `MYSQL_DATABASE` | `localhost` / `3306` / `ddarungi_db` | |
-| `MYSQL_USER` / `MYSQL_PASSWORD` | – (required) | `MYSQL_ROOT_PASSWORD` too, for the compose container |
+| `MYSQL_USER` / `MYSQL_PASSWORD` | `ddarungi` / `ddarungi` | `MYSQL_ROOT_PASSWORD` (`root`) for the compose container |
 | `RABBIT_HOST` / `RABBIT_PORT` | `localhost` / `5672` | |
-| `RABBIT_USER` / `RABBIT_PASSWORD` | – (required) | |
+| `RABBIT_USER` / `RABBIT_PASSWORD` | `guest` / `guest` | |
 | `REDIS_HOST` / `REDIS_PORT` / `REDIS_PASSWORD` | `localhost` / `6379` / empty (no AUTH) | |
 | `SEOUL_API_BASE_URL` | `http://localhost:8089` | production: `http://openapi.seoul.go.kr:8088` |
-| `SEOUL_API_KEY` | – (required) | WireMock: `LOCAL_KEY`; production: Seoul Open Data Plaza key |
+| `SEOUL_API_KEY` | `LOCAL_KEY` | Seoul Open Data Plaza key |
 | `FCM_ENABLED`, `FCM_CREDENTIALS_PATH` | `false`, – | Firebase service-account JSON for real pushes |
 
 ## Database migrations
