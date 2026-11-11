@@ -1,0 +1,12 @@
+# Test-only values for the placeholders application.yml leaves without defaults (secrets). Loaded on top of
+# classpath:application.yml. Testcontainers' @ServiceConnection replaces the datasource credentials anyway.
+spring:
+  datasource:
+    username: test
+    password: test
+  rabbitmq:
+    username: test
+    password: test
+
+seoul-api:
+  key: TEST_KEY

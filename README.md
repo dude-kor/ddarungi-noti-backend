@@ -17,6 +17,7 @@ API contract: [`docs/API.md`](docs/API.md).
 ## Run locally
 
 ```bash
+cp .env.example .env          # once: credentials / API keys (gitignored), read by compose AND bootRun
 docker compose up -d          # MySQL, Redis, RabbitMQ, WireMock (Seoul API mock on :8089)
 ./gradlew bootRun             # http://localhost:8080
 ./gradlew test
@@ -35,12 +36,19 @@ SEOUL_API_KEY=SLOW_KEY ./gradlew bootRun
 
 ## Configuration
 
+Secrets have **no defaults**: the app refuses to start (`Could not resolve placeholder`) and compose refuses to
+run until they are set. Locally put them in `.env` (see [`.env.example`](.env.example)); in deployment pass them
+as environment variables / your platform's secret store.
+
 | Variable | Default | |
 |---|---|---|
-| `MYSQL_HOST` / `MYSQL_USER` / `MYSQL_PASSWORD` | `localhost` / `ddarungi` / `ddarungi` | |
-| `REDIS_HOST`, `RABBIT_HOST` | `localhost` | |
+| `MYSQL_HOST` / `MYSQL_PORT` / `MYSQL_DATABASE` | `localhost` / `3306` / `ddarungi_db` | |
+| `MYSQL_USER` / `MYSQL_PASSWORD` | – (required) | `MYSQL_ROOT_PASSWORD` too, for the compose container |
+| `RABBIT_HOST` / `RABBIT_PORT` | `localhost` / `5672` | |
+| `RABBIT_USER` / `RABBIT_PASSWORD` | – (required) | |
+| `REDIS_HOST` / `REDIS_PORT` / `REDIS_PASSWORD` | `localhost` / `6379` / empty (no AUTH) | |
 | `SEOUL_API_BASE_URL` | `http://localhost:8089` | production: `http://openapi.seoul.go.kr:8088` |
-| `SEOUL_API_KEY` | `LOCAL_KEY` | Seoul Open Data Plaza key |
+| `SEOUL_API_KEY` | – (required) | WireMock: `LOCAL_KEY`; production: Seoul Open Data Plaza key |
 | `FCM_ENABLED`, `FCM_CREDENTIALS_PATH` | `false`, – | Firebase service-account JSON for real pushes |
 
 ## Database migrations

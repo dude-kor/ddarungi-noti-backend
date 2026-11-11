@@ -1,13 +1,18 @@
 spring:
   application:
     name: ddarungi-noti
+  config:
+    # Secrets are never committed. Local runs (`./gradlew bootRun`) read them from ./.env (gitignored, copy
+    # .env.example); containers and servers get them as real environment variables. Missing file = skipped.
+    import: optional:file:.env[.properties]
   threads:
     virtual:
       enabled: true            # Java 21 virtual threads for Tomcat + @Async/@Scheduled executors
   datasource:
-    url: jdbc:mysql://${MYSQL_HOST:localhost}:3306/ddarungi_db?useUnicode=true&characterEncoding=utf8mb4&serverTimezone=Asia/Seoul&rewriteBatchedStatements=true
-    username: ${MYSQL_USER:ddarungi}
-    password: ${MYSQL_PASSWORD:ddarungi}
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:ddarungi_db}?useUnicode=true&characterEncoding=utf8mb4&serverTimezone=Asia/Seoul&rewriteBatchedStatements=true
+    # No defaults: startup fails fast ("Could not resolve placeholder") instead of running with known credentials.
+    username: ${MYSQL_USER}
+    password: ${MYSQL_PASSWORD}
   jpa:
     open-in-view: false
     hibernate:
@@ -29,13 +34,14 @@ spring:
     baseline-on-migrate: false
   rabbitmq:
     host: ${RABBIT_HOST:localhost}
-    port: 5672
-    username: guest
-    password: guest
+    port: ${RABBIT_PORT:5672}
+    username: ${RABBIT_USER}
+    password: ${RABBIT_PASSWORD}
   data:
     redis:
       host: ${REDIS_HOST:localhost}
-      port: 6379
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}       # empty = no AUTH (local Redis has none)
 
 server:
   port: 8080
@@ -45,7 +51,7 @@ server:
 
 seoul-api:
   base-url: ${SEOUL_API_BASE_URL:http://localhost:8089}   # real: http://openapi.seoul.go.kr:8088
-  key: ${SEOUL_API_KEY:LOCAL_KEY}                          # WireMock: ERROR_KEY / SLOW_KEY simulate failures
+  key: ${SEOUL_API_KEY}                                    # WireMock: LOCAL_KEY / ERROR_KEY / SLOW_KEY ...
   chunk-size: 1000
   max-stations: 3000
   connect-timeout: 2s

@@ -4,5 +4,7 @@ build/
 .idea/
 out/
 .env
+.env.*
+!.env.example
 # Firebase service account – never commit
 firebase-service-account*.json

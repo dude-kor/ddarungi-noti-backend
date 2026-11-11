@@ -55,7 +55,9 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: docker compose config
-        run: docker compose --profile app config --quiet
+        run: |
+          cp .env.example .env    # placeholder values only; real secrets never live in the repo
+          docker compose --profile app config --quiet
 
       - name: WireMock mappings are valid JSON
         run: |

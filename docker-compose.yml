@@ -1,5 +1,7 @@
 name: ddarungi-noti
 
+# Credentials come from ./.env (copy .env.example). `:?` makes compose refuse to start when one is missing.
+
 services:
   mysql:
     image: mysql:8.0
@@ -7,10 +9,10 @@ services:
     restart: unless-stopped
     ports: ["3306:3306"]
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: ddarungi_db
-      MYSQL_USER: ddarungi
-      MYSQL_PASSWORD: ddarungi
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in .env}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-ddarungi_db}
+      MYSQL_USER: ${MYSQL_USER:?set MYSQL_USER in .env}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?set MYSQL_PASSWORD in .env}
       TZ: Asia/Seoul
     command:
       - --character-set-server=utf8mb4
@@ -18,7 +20,8 @@ services:
       - --default-time-zone=+09:00
     volumes: [mysql-data:/var/lib/mysql]
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      # $$ = read inside the container, so the password never appears in `docker compose config` output
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -42,8 +45,8 @@ services:
     restart: unless-stopped
     ports: ["5672:5672", "15672:15672"]
     environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_USER: ${RABBIT_USER:?set RABBIT_USER in .env}
+      RABBITMQ_DEFAULT_PASS: ${RABBIT_PASSWORD:?set RABBIT_PASSWORD in .env}
     volumes: [rabbitmq-data:/var/lib/rabbitmq]
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
@@ -69,13 +72,12 @@ services:
     build: .
     container_name: ddarungi-app
     ports: ["8080:8080"]
+    env_file: [.env]           # credentials, SEOUL_API_KEY, FCM_* ; the entries below override the hosts
     environment:
       MYSQL_HOST: mysql
       REDIS_HOST: redis
       RABBIT_HOST: rabbitmq
       SEOUL_API_BASE_URL: http://wiremock:8080
-      SEOUL_API_KEY: LOCAL_KEY
-      FCM_ENABLED: "false"
     depends_on:
       mysql: { condition: service_healthy }
       redis: { condition: service_healthy }
